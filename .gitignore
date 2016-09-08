@@ -31,3 +31,9 @@
 # Debug files
 *.dSYM/
 *.su
+
+# Proteus files
+*.PWI
+*.DBK
+*.lst
+*.dev
