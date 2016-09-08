@@ -35,5 +35,11 @@
 # Proteus files
 *.PWI
 *.DBK
+
+# Assembly files
 *.lst
 *.dev
+
+# Temporary files
+~*
+.~*
