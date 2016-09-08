@@ -1,0 +1,26 @@
+# depslib dependency file v1.0
+1472630103 source:c:\users\mgrumic\workspace\xtea\xtea.c
+	<stdio.h>
+	<stdlib.h>
+	<stdint.h>
+	<time.h>
+	<pthread.h>
+	"rs232.h"
+
+1468139231 source:c:\users\mgrumic\workspace\xtea\rs232.c
+	"rs232.h"
+
+1468137130 c:\users\mgrumic\workspace\xtea\rs232.h
+	<stdio.h>
+	<string.h>
+	<termios.h>
+	<sys/ioctl.h>
+	<unistd.h>
+	<fcntl.h>
+	<sys/types.h>
+	<sys/stat.h>
+	<limits.h>
+	<sys/file.h>
+	<errno.h>
+	<windows.h>
+
