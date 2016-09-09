@@ -26,26 +26,26 @@ Button_D EQU p1.3			; predefinisan pin za slovo 'D'
 ;						DATA SEGMENT
 ;-------------------------------------------------------------------------------------------------------------------------------
 DSEG  AT  30h
-y0:   DS    1
+y0:   DS    1   ;y0 - y3 prva cetiri bajta XTEA buffer-a
 y1:   DS    1
 y2:   DS    1
 y3:   DS    1
-z0:   DS    1
+z0:   DS    1   ;z0 - z3 druga cetiri bajta XTEA buffer-a
 z1:   DS    1
 z2:   DS    1
 z3:   DS    1
-tmp0: DS    1
+tmp0: DS    1   ;tmp buffer za potrebe XTEA enkripcije/dekripcije
 tmp1: DS    1
 tmp2: DS    1
 tmp3: DS    1
-sum0: DS    1
-sum1: DS    1
+sum0: DS    1   ;sum - za mixanje sum vrijednosti i za shuffelovanje
+sum1: DS    1   ;koristenja bajta kljuca 
 sum2: DS    1
 sum3: DS    1
-temp: DS    1
-disp_counter: DS    1
-rec_char:     DS    1
-rec_byte:     DS    1   
+temp: DS    1   ;tmp pomocna promjenjiva
+disp_counter: DS    1 ; counter modula 16 koliko karaktera smo do sada upisali na LCD
+rec_char:     DS    1 ; promjenjiva u koju smjestamo primljeni dekriptovan karakter
+rec_byte:     DS    1 ; counter modula 8 koliko bajtova smo primili preko RS232
 ;-------------------------------------------------------------------------------------------------------------------------------
 ;						KODNI SEGMENT
 ;-------------------------------------------------------------------------------------------------------------------------------
@@ -63,18 +63,9 @@ CSEG
 	org 001bh
 		reti
 	org 0023h
-		jmp SERIJSKA
+		jmp SERIJSKA ; serijska prekidna servisna rutina
 	org 002bh
 		reti
-		
-;==============================================================================================================================
-;							RS    E     D4    D5    D6    D7
-;						PROGRAM 2.0 | 2.1 | 2.2 | 2.3 | 2.4 | 2.5 | 2.6 | 2.7 ; LCD PORT
-;							 0  |  1  |  1  |  1  |  0  |  0  | 0   |0   
-;==============================================================================================================================
-
-
-
 
 ORG 0050h
 
@@ -105,6 +96,8 @@ NULIRAJ:
 	ret
 
 ; Potprogram za slanje XTEA buffera na RS232
+; delay nakon slanja svakog bajta, inace ne stigne prekidna rutina da ga obradi
+; i posalje na RS232
 SEND_BYTES:
 	mov sbuf, y0
 	call kasnjenje
@@ -130,8 +123,7 @@ SEND_BYTES:
 ;---------------------------------------------------------------------------------------------------------------------
 PETLJA:
 	mov r7, p1
-	
-	cjne r7, #0FFh, GO_GO_GO
+	cjne r7, #0FFh, GO_GO_GO ; provjeravamo da li je stisnut bilo koji karakter za slanje
 	mov r3, #00h
 	jmp PETLJA
 GO_GO_GO:
@@ -140,7 +132,7 @@ GO_GO_GO:
 	cjne r3, #00h, PETLJA
 	mov r3, #01h
 	
-	mov a, p1
+	mov a, p1 ; provjeravamo koji karakter je pritisnut
 	anl a, #001h
 	jz A_PUSHED
 	
@@ -168,7 +160,7 @@ S_PUSHED:
 	jmp END_THIS
 D_PUSHED:	
 	mov y0, #044h
-	;jmp END_THIS
+	;jmp END_THIS ; u sustini nam ne treba jmp ovde
 END_THIS:
 	call EXTea
 	call SEND_BYTES
@@ -187,9 +179,9 @@ SERIJSKA:
 	RETI		; vracanje iz potprograma
 
 PRIJEM:
-	mov rec_char, sbuf
+	mov rec_char, sbuf ; preuzimamo karakter iz sbuf
 	mov a, rec_byte
-	cjne a, #00h, dalje1
+	cjne a, #00h, dalje1 ; provjeravamo koji karakter smo dobili
 	mov y0, rec_char
 	jmp die_ende
 dalje1:
@@ -218,16 +210,14 @@ dalje6:
 	jmp die_ende
 dalje7:
 	mov z3, rec_char
-	setb p2.7
 	call DXtea
-	clr p2.7
 	mov rec_char, y0
 	call ispis
 	mov rec_byte, #00h
 	clr ri
 	RETI
 die_ende:
-	inc rec_byte
+	inc rec_byte ; povecavamo broj primljenih bajtova
 	clr ri		; mora se softverski obrisati
 	RETI
 
@@ -333,12 +323,12 @@ INIT_DISPLAY:
 
 ISPIS:
 	mov r0, disp_counter
-	cjne r0, #090h, nope1
-	mov r0, #0C0h
+	cjne r0, #090h, nope1 ; kraj prvog reda
+	mov r0, #0C0h ; 
 	jmp nope
 	nope1:
-	cjne r0, #0D0h, nope
-	mov a, #01h
+	cjne r0, #0D0h, nope ; kraj drugog reda
+	mov a, #01h ; brisemo display jer je popunjen
 	call LCD_CMD
 	mov r0, #080h
 	nope:	
@@ -365,7 +355,7 @@ EXTea:
       mov   sum3,a 
       mov   r2,#32*2   ;nr of rounds *2 (because of trick with twice the main code, one for y and one for z; and another inside...)
 
-      mov   dptr,#key  ;dptr will not change
+      mov   dptr,#key  ;dptr se ne mijenja
 ETeaRound:            
 
       mov   r4,z0
@@ -522,7 +512,7 @@ DXTea:
       mov   sum1,#037h
       mov   sum0,#020h 
 
-      mov   dptr,#key  ;dptr will not change
+      mov   dptr,#key  ;dptr se ne mijanja
 DTeaRound:            
 
       mov   r4,y0
@@ -678,12 +668,6 @@ DTeaSubRound2:
 ;
 ;---------------------------------------------------------------------------------------------------------------------
 
-
-;Key:  
-;      db    012h,000h,000h,001h
-;      db    000h,000h,000h,000h
-;      db    000h,000h,000h,000h
-;      db    000h,000h,000h,000h
 Key:  
       db    09fh, 012h, 0abh, 099h
       db    0fah, 0e6h, 0e1h, 04dh
@@ -721,9 +705,6 @@ KASNJENJE1:
 	djnz 	r4	,	KASNJENJE3
 	
 	ret
-
-
-
 	
 END	
 	
