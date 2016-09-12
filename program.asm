@@ -1,14 +1,14 @@
 ;********************************************************************************************************************************
 ;*												
 ;*	
-;*	 			SERIJSKA KOMUNIKACIJA SA PC RACUNAROM PREKO RS 232 sa XTEA enkripcijom
+;*	 			SERIJSKA KOMUNIKACIJA SA PC RACUNAROM PREKO RS232 sa XTEA enkripcijom
 ;*	
 ;*
 ;********************************************************************************************************************************
 
 
-E	EQU	p2.1			; definisanje simbolickog imena za pin p2.1 (na p2.4 je pin E)
-RS	EQU	p2.0			; definisanje simbolickog imena za pin p2.0 (na p2.3 je pin RS)
+E	EQU	p2.1			; definisanje simbolickog imena za pin p2.1
+RS	EQU	p2.0			; definisanje simbolickog imena za pin p2.0
 					; RW nepotreban, radimo samo upisivanje
 D4	EQU	p2.2			; DATA pinovi LCD display-a
 D5	EQU	p2.3
@@ -39,7 +39,7 @@ tmp1: DS    1
 tmp2: DS    1
 tmp3: DS    1
 sum0: DS    1   ;sum - za mixanje sum vrijednosti i za shuffelovanje
-sum1: DS    1   ;koristenja bajta kljuca 
+sum1: DS    1   ;indeksa bajta kljuca 
 sum2: DS    1
 sum3: DS    1
 temp: DS    1   ;tmp pomocna promjenjiva
@@ -173,7 +173,6 @@ END_THIS:
 ;-------------------------------------------------------------------
 
 SERIJSKA:
-
 	jb ri, PRIJEM	; ako je ri setovan radi se o prijemu u suprotnom o predaji podatka
 	clr ti		; mora se softverski obrisati
 	RETI		; vracanje iz potprograma

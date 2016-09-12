@@ -9,6 +9,7 @@
 #define NUM_ROUNDS 32
 #define MAX_STR 4096
 
+pthread_mutex_t* mymutex = NULL;
 //#define _XTEA_DEBUG
 typedef enum _COM_PORT {
     COM1 = 0,
@@ -30,14 +31,10 @@ typedef enum _COM_PORT {
 } COM_PORT;
 
 uint32_t key[4] = {
-    #if 1
     0x99ab129f,
     0x4de1e6fa,
     0xbbe8b100,
     0xfa888ef3
-    #else
-    0x01000012,
-    #endif
 };
 
 static const COM_PORT CURRENT_COM_PORT = COM1;
@@ -79,7 +76,9 @@ void *listening( void *ptr ) {
     while(1) {
         int n, i;
         n = RS232_PollComport(CURRENT_COM_PORT, buf, 4096);
-
+        if (recBytes == 0 && n) {
+            pthread_mutex_lock(mymutex);
+        }
         #ifdef _XTEA_DEBUG
         for (i = 0; i < n && recBytes < 8; i++) {
             fprintf(stderr, "Received byte: '0x%02X'\n", buf[i]);
@@ -94,6 +93,7 @@ void *listening( void *ptr ) {
             decipher(NUM_ROUNDS, dataRec, key);
             fprintf(stderr, "Received character: '%c'\n", ((uint8_t*)dataRec)[0]);
             recBytes = 0;
+            pthread_mutex_unlock(mymutex);
         }
         #endif // _XTEA_DEBUG
         Sleep(100);
@@ -108,6 +108,8 @@ BOOL CtrlHandler( DWORD fdwCtrlType )
       printf( "Exiting...\n\n");
       Beep( 750, 300 );
       RS232_CloseComport(CURRENT_COM_PORT);
+      pthread_mutex_destroy(mymutex);
+      free(mymutex);
       exit(0);
       return( TRUE );
 
@@ -137,6 +139,8 @@ int main() {
     pthread_t listening_thread;
     int iret1;
     uint32_t buffer[2] = {0};
+    mymutex = (pthread_mutex_t*) malloc (sizeof(pthread_mutex_t));
+    pthread_mutex_init(mymutex, NULL);
     iret1 = pthread_create( &listening_thread, NULL, listening, (void*)"");
     if(iret1) {
         fprintf(stderr,"Error - pthread_create() return code: %d\n",iret1);
@@ -151,6 +155,7 @@ int main() {
 
     while(1) {
         char c = fgetc(stdin);
+        pthread_mutex_lock(mymutex);
         int i;
         if (c > 0x21 || c == ' ') {
             buffer[0] = (uint32_t) c;
@@ -163,6 +168,7 @@ int main() {
             buffer[0] = 0;
             buffer[1] = 0;
         }
+        pthread_mutex_unlock(mymutex);
         Sleep(1000);
     }
 }
