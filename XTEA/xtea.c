@@ -37,10 +37,10 @@ uint32_t key[4] = {
     0xfa888ef3
 };
 
-static const COM_PORT CURRENT_COM_PORT = COM1;
+static const COM_PORT CURRENT_COM_PORT = COM2;
 static const uint32_t BAUD_RATE = 300;
-/* take 64 bits of data in v[0] and v[1] and 128 bits of key[0] - key[3] */
 
+/* 64 bita podataka u v[0] - v[1] i 128 bita kljuca u key[0] - key[3] */
 void encipher(unsigned int num_rounds, uint32_t v[2], uint32_t const key[4]) {
     unsigned int i;
     uint32_t v0=v[0], v1=v[1], sum=0, delta=0x9E3779B9;
